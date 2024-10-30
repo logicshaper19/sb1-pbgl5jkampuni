@@ -1,14 +1,55 @@
-import React from 'react';
-import Link from 'next/link';
-import { Company } from '../../types';
-import { Calendar, Users, Building2, AlertCircle } from 'lucide-react';
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Company } from '@/types';
+import { Calendar, Building2, AlertCircle } from 'lucide-react';
 
 interface SearchResultsProps {
-  results: Company[];
+  query: string;
 }
 
-export const SearchResults = ({ results }: SearchResultsProps) => {
-  if (results.length === 0) {
+export function SearchResults({ query }: SearchResultsProps) {
+  const router = useRouter();
+  const [results, setResults] = useState<Company[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchResults = async () => {
+      if (!query) {
+        setResults([]);
+        return;
+      }
+      
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const response = await fetch(`/api/companies/search?q=${encodeURIComponent(query)}`);
+        if (!response.ok) throw new Error('Search failed');
+        
+        const data = await response.json();
+        setResults(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error('Search failed:', error);
+        setError('Failed to fetch results');
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchResults();
+  }, [query]);
+
+  if (!query) return null;
+
+  if (error) {
+    return <div className="text-red-500">{error}</div>;
+  }
+
+  if (query && (!results || results.length === 0)) {
     return (
       <div className="text-center py-8 text-gray-500">
         No companies found. Try a different search term.
@@ -16,21 +57,13 @@ export const SearchResults = ({ results }: SearchResultsProps) => {
     );
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
-
   return (
     <div className="space-y-4">
-      {results.map((company) => (
-        <Link
+      {Array.isArray(results) && results.map((company) => (
+        <div
           key={company.id}
-          href={`/company/${company.id}`}
-          className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow"
+          onClick={() => router.push(`/companies/${company.id}`)}
+          className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer"
         >
           <div className="flex justify-between items-start">
             <div>
@@ -41,12 +74,10 @@ export const SearchResults = ({ results }: SearchResultsProps) => {
                   <span>Registration: {company.registrationNumber}</span>
                 </div>
                 
-                {company.incorporationDate && (
-                  <div className="flex items-center text-gray-600">
-                    <Calendar className="w-4 h-4 mr-2" />
-                    <span>Registered: {formatDate(company.incorporationDate)}</span>
-                  </div>
-                )}
+                <div className="flex items-center text-gray-600">
+                  <Calendar className="w-4 h-4 mr-2" />
+                  <span>Registered: {new Date(company.registrationDate).toLocaleDateString()}</span>
+                </div>
 
                 <div className="flex items-center text-gray-600">
                   <AlertCircle className="w-4 h-4 mr-2" />
@@ -54,37 +85,9 @@ export const SearchResults = ({ results }: SearchResultsProps) => {
                 </div>
               </div>
             </div>
-
-            {company.shareholders && company.shareholders.length > 0 && (
-              <div className="ml-6">
-                <h3 className="text-sm font-medium text-gray-700 flex items-center mb-2">
-                  <Users className="w-4 h-4 mr-1" />
-                  Shareholders
-                </h3>
-                <div className="text-sm text-gray-600 space-y-1">
-                  {company.shareholders.slice(0, 3).map((shareholder) => (
-                    <div key={shareholder.id} className="flex justify-between">
-                      <span>{shareholder.name}</span>
-                      <span className="ml-4 text-gray-500">{shareholder.percentage}%</span>
-                    </div>
-                  ))}
-                  {company.shareholders.length > 3 && (
-                    <div className="text-sm text-blue-600">
-                      +{company.shareholders.length - 3} more
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
-
-          {company.description && (
-            <p className="mt-4 text-gray-600 text-sm line-clamp-2">
-              {company.description}
-            </p>
-          )}
-        </Link>
+        </div>
       ))}
     </div>
   );
-};
+}

@@ -44,7 +44,7 @@ export default function Home() {
         <SearchBar onSearch={handleSearch} />
         
         <div className="mt-8">
-          {isLoading && (
+          {isLoading && searchResults && (
             <div className="flex justify-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
             </div>
