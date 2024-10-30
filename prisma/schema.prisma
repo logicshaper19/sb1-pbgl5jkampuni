@@ -1,48 +1,49 @@
-datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
-}
-
 generator client {
   provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Company {
-  id                String      @id @default(cuid())
-  name              String
-  registrationNumber String      @unique
-  registrationDate  DateTime
-  status            CompanyStatus @default(ACTIVE)
-  address           Address?    @relation(fields: [addressId], references: [id])
-  addressId         String?
-  contactInfo       ContactInfo? @relation(fields: [contactInfoId], references: [id])
-  contactInfoId     String?
-  directors         Director[]
-  shareholders      Shareholder[]
-  encumbrances      Encumbrance[]
-  tenders           Tender[]
-  financialResults  FinancialResult[]
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
+  id                 String            @id @default(cuid())
+  name               String
+  registrationNumber String            @unique
+  registrationDate   DateTime
+  status             String            @default("ACTIVE")
+  addressId          String?
+  contactInfoId      String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  contactInfo        ContactInfo?      @relation(fields: [contactInfoId], references: [id])
+  address            Address?          @relation(fields: [addressId], references: [id])
+  directors          Director[]
+  encumbrances       Encumbrance[]
+  financialResults   FinancialResult[]
+  shareholders       Shareholder[]
+  tenders            Tender[]
 }
 
 model Address {
-  id          String    @id @default(cuid())
-  postalCode  String?
-  county      String?
-  district    String?
-  locality    String?
-  street      String?
-  building    String?
+  id            String    @id @default(cuid())
+  postalCode    String?
+  county        String?
+  district      String?
+  locality      String?
+  street        String?
+  building      String?
   postalAddress String?
-  companies   Company[]
+  companies     Company[]
 }
 
 model ContactInfo {
-  id          String    @id @default(cuid())
-  email       String?
-  phone       String?
-  companies   Company[]
+  id        String    @id @default(cuid())
+  email     String?
+  phone     String?
+  companies Company[]
 }
 
 model Director {
@@ -52,55 +53,50 @@ model Director {
   address         String?
   nationality     String?
   appointmentDate DateTime?
-  company         Company   @relation(fields: [companyId], references: [id])
   companyId       String
+  company         Company   @relation(fields: [companyId], references: [id])
 }
 
 model Shareholder {
-  id              String    @id @default(cuid())
-  name            String
-  shares          Int
-  nationality     String?
-  company         Company   @relation(fields: [companyId], references: [id])
-  companyId       String
+  id          String  @id @default(cuid())
+  name        String
+  shares      Int
+  nationality String?
+  address     String?
+  companyId   String
+  company     Company @relation(fields: [companyId], references: [id])
 }
 
 model Encumbrance {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   type        String
   amount      Float
   date        DateTime
   status      String
   description String?
-  company     Company   @relation(fields: [companyId], references: [id])
   companyId   String
+  company     Company  @relation(fields: [companyId], references: [id])
 }
 
 model Tender {
-  id              String    @id @default(cuid())
-  projectName     String
-  amount          Float
-  awardDate       DateTime
+  id               String   @id @default(cuid())
+  projectName      String
+  amount           Float
+  awardDate        DateTime
   completionStatus String
   governmentEntity String
-  company         Company   @relation(fields: [companyId], references: [id])
-  companyId       String
+  companyId        String
+  company          Company  @relation(fields: [companyId], references: [id])
 }
 
 model FinancialResult {
-  id            String    @id @default(cuid())
+  id            String  @id @default(cuid())
   year          Int
   revenue       Float
   profit        Float
   assets        Float
   liabilities   Float
   employeeCount Int
-  company       Company   @relation(fields: [companyId], references: [id])
   companyId     String
-}
-
-enum CompanyStatus {
-  ACTIVE
-  INACTIVE
-  DISSOLVED
+  company       Company @relation(fields: [companyId], references: [id])
 }

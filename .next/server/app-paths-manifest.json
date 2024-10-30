@@ -1,0 +1,8 @@
+{
+  "/api/companies/[id]/route": "app/api/companies/[id]/route.js",
+  "/api/companies/search/route": "app/api/companies/search/route.js",
+  "/api/auth/me/route": "app/api/auth/me/route.js",
+  "/page": "app/page.js",
+  "/search/results/page": "app/search/results/page.js",
+  "/companies/[id]/page": "app/companies/[id]/page.js"
+}

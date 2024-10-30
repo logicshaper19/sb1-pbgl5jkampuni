@@ -1,62 +1,46 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { Search, User, LogOut } from 'lucide-react';
+'use client';
 
-export const TopNav = () => {
+import { useAuth } from '@/context/AuthContext';
+import { SearchBar } from './search/SearchBar';
+import Link from 'next/link';
+import { User } from '@/types';
+
+export function TopNav() {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
-
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
 
   return (
     <nav className="bg-white shadow">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex">
-            <Link to="/" className="flex items-center">
-              <Search className="h-8 w-8 text-blue-600" />
-              <span className="ml-2 text-xl font-bold text-gray-900">Kampuni</span>
+            <Link href="/" className="flex-shrink-0 flex items-center">
+              <h1 className="text-xl font-bold">UseKampuni</h1>
             </Link>
+            <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
+              <Link href="/companies" className="text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 border-transparent hover:border-gray-300">
+                Companies
+              </Link>
+            </div>
           </div>
-
+          
           <div className="flex items-center">
-            {user ? (
-              <div className="flex items-center space-x-4">
-                {user.role === 'ADMIN' && (
-                  <Link
-                    to="/admin"
-                    className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-                  >
-                    Admin Panel
-                  </Link>
-                )}
-                <div className="flex items-center space-x-2 text-gray-700">
-                  <User className="h-5 w-5" />
-                  <span className="text-sm font-medium">{user.name}</span>
-                </div>
+            <div className="w-full max-w-lg lg:max-w-xs">
+              <SearchBar />
+            </div>
+            {user && user.name && (
+              <div className="ml-4 flex items-center">
+                <span className="text-gray-900">{user.name}</span>
                 <button
-                  onClick={handleLogout}
-                  className="flex items-center text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
+                  onClick={() => logout()}
+                  className="ml-4 text-gray-600 hover:text-gray-900"
                 >
-                  <LogOut className="h-5 w-5 mr-1" />
                   Logout
                 </button>
               </div>
-            ) : (
-              <Link
-                to="/login"
-                className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Login
-              </Link>
             )}
           </div>
         </div>
       </div>
     </nav>
   );
-};
+}

@@ -1,252 +1,175 @@
-// Previous imports remain the same...
+'use client';
+
+import { useEffect, useRef } from 'react';
+import * as d3 from 'd3';
+import type { Director, Shareholder } from '@/types';
 
 interface NetworkGraphProps {
   companyId: string;
   companyName: string;
-  directors: Person[];
-  shareholders: Person[];
+  directors: Director[];
+  shareholders: Shareholder[];
 }
 
-type LayoutType = 'force' | 'radial' | 'circular';
+interface Node {
+  id: string;
+  name: string;
+  type: 'company' | 'director' | 'shareholder';
+  value?: number;
+}
 
-export const NetworkGraph = ({ companyId, companyName, directors, shareholders }: NetworkGraphProps) => {
+interface Link {
+  source: string;
+  target: string;
+  type: 'director' | 'shareholder';
+  value?: number;
+}
+
+export function NetworkGraph({ companyId, companyName, directors, shareholders }: NetworkGraphProps) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [zoom, setZoom] = useState(1);
-  const [nodes, setNodes] = useState<NetworkNode[]>([]);
-  const [links, setLinks] = useState<NetworkLink[]>([]);
-  const [layout, setLayout] = useState<LayoutType>('force');
-  const [groupByType, setGroupByType] = useState(false);
-
-  // ... Previous useEffect for data preparation remains the same ...
 
   useEffect(() => {
-    if (!svgRef.current || nodes.length === 0) return;
+    if (!svgRef.current) return;
 
-    d3.select(svgRef.current).selectAll('*').remove();
+    // Clear previous graph
+    d3.select(svgRef.current).selectAll("*").remove();
 
-    const width = 800;
-    const height = 600;
+    // Prepare data
+    const nodes: Node[] = [
+      { id: companyId, name: companyName, type: 'company' },
+      ...directors.map(d => ({
+        id: `director-${d.id}`,
+        name: d.name,
+        type: 'director' as const
+      })),
+      ...shareholders.map(s => ({
+        id: `shareholder-${s.id}`,
+        name: s.name,
+        type: 'shareholder' as const,
+        value: s.percentage
+      }))
+    ];
+
+    const links: Link[] = [
+      ...directors.map(d => ({
+        source: `director-${d.id}`,
+        target: companyId,
+        type: 'director' as const
+      })),
+      ...shareholders.map(s => ({
+        source: `shareholder-${s.id}`,
+        target: companyId,
+        type: 'shareholder' as const,
+        value: s.percentage
+      }))
+    ];
+
+    // Set up dimensions
+    const width = svgRef.current.clientWidth;
+    const height = svgRef.current.clientHeight;
+
+    // Create SVG
     const svg = d3.select(svgRef.current)
       .attr('width', width)
       .attr('height', height);
 
-    const zoomBehavior = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.1, 4])
-      .on('zoom', (event) => {
-        g.attr('transform', event.transform);
-        setZoom(event.transform.k);
-      });
-
-    svg.call(zoomBehavior);
-    const g = svg.append('g');
-
-    const filteredNodes = nodes.map(node => ({
-      ...node,
-      hidden: searchTerm && !node.name.toLowerCase().includes(searchTerm.toLowerCase())
-    }));
-
-    let simulation: d3.Simulation<NetworkNode, NetworkLink>;
-
-    switch (layout) {
-      case 'radial':
-        simulation = d3.forceSimulation<NetworkNode>(filteredNodes)
-          .force('link', d3.forceLink<NetworkNode, NetworkLink>(links).id(d => d.id))
-          .force('charge', d3.forceManyBody().strength(-500))
-          .force('r', d3.forceRadial(height / 3, width / 2, height / 2))
-          .force('collision', d3.forceCollide().radius(d => (d.value || 20) + 10));
-        break;
-
-      case 'circular':
-        const radius = Math.min(width, height) / 3;
-        const angleStep = (2 * Math.PI) / filteredNodes.length;
-        filteredNodes.forEach((node, i) => {
-          node.x = width / 2 + radius * Math.cos(i * angleStep);
-          node.y = height / 2 + radius * Math.sin(i * angleStep);
-          node.fx = node.x;
-          node.fy = node.y;
-        });
-        simulation = d3.forceSimulation<NetworkNode>(filteredNodes)
-          .force('link', d3.forceLink<NetworkNode, NetworkLink>(links).id(d => d.id));
-        break;
-
-      default: // force
-        simulation = d3.forceSimulation<NetworkNode>(filteredNodes)
-          .force('link', d3.forceLink<NetworkNode, NetworkLink>(links).id(d => d.id))
-          .force('charge', d3.forceManyBody().strength(-200))
-          .force('center', d3.forceCenter(width / 2, height / 2))
-          .force('collision', d3.forceCollide().radius(d => (d.value || 20) + 5));
-
-        if (groupByType) {
-          simulation.force('x', d3.forceX<NetworkNode>().x(d => {
-            switch (d.type) {
-              case 'director': return width * 0.25;
-              case 'company': return width * 0.5;
-              case 'shareholder': return width * 0.75;
-              default: return width * 0.5;
-            }
-          }).strength(0.5));
-        }
-    }
+    // Create simulation
+    const simulation = d3.forceSimulation(nodes as d3.SimulationNodeDatum[])
+      .force('link', d3.forceLink(links).id((d: any) => d.id))
+      .force('charge', d3.forceManyBody().strength(-1000))
+      .force('center', d3.forceCenter(width / 2, height / 2));
 
     // Create links
-    const link = g.append('g')
+    const link = svg.append('g')
       .selectAll('line')
       .data(links)
       .join('line')
-      .attr('stroke', '#999')
-      .attr('stroke-opacity', 0.6)
-      .attr('stroke-width', d => Math.sqrt(d.value));
+      .attr('stroke', d => d.type === 'director' ? '#9333ea' : '#2563eb')
+      .attr('stroke-width', d => d.value ? Math.sqrt(d.value) : 1)
+      .attr('stroke-opacity', 0.6);
 
     // Create nodes
-    const node = g.append('g')
+    const node = svg.append('g')
       .selectAll('g')
-      .data(filteredNodes)
+      .data(nodes)
       .join('g')
-      .attr('opacity', d => d.hidden ? 0.2 : 1)
-      .call(d3.drag<SVGGElement, NetworkNode>()
+      .call(d3.drag<any, any>()
         .on('start', dragstarted)
         .on('drag', dragged)
         .on('end', dragended));
 
     // Add circles to nodes
     node.append('circle')
-      .attr('r', d => d.value)
+      .attr('r', d => d.type === 'company' ? 20 : 10)
       .attr('fill', d => {
         switch (d.type) {
-          case 'company': return '#3b82f6';
-          case 'director': return '#10b981';
-          case 'shareholder': return '#f59e0b';
-          default: return '#999';
+          case 'company': return '#ef4444';
+          case 'director': return '#9333ea';
+          case 'shareholder': return '#2563eb';
+          default: return '#gray';
         }
       });
 
     // Add labels to nodes
     node.append('text')
+      .attr('dx', 15)
+      .attr('dy', 5)
       .text(d => d.name)
-      .attr('x', d => d.value + 5)
-      .attr('y', 5)
-      .attr('font-size', '12px')
-      .attr('fill', d => d.hidden ? '#999' : '#000');
+      .attr('fill', '#1f2937')
+      .attr('font-size', '12px');
 
-    // Update positions on each tick
+    // Add titles for hover
+    node.append('title')
+      .text(d => {
+        if (d.type === 'shareholder' && d.value) {
+          return `${d.name} (${d.value}%)`;
+        }
+        return d.name;
+      });
+
+    // Update positions on simulation tick
     simulation.on('tick', () => {
       link
-        .attr('x1', d => (d.source as NetworkNode).x!)
-        .attr('y1', d => (d.source as NetworkNode).y!)
-        .attr('x2', d => (d.target as NetworkNode).x!)
-        .attr('y2', d => (d.target as NetworkNode).y!);
+        .attr('x1', d => (d.source as any).x)
+        .attr('y1', d => (d.source as any).y)
+        .attr('x2', d => (d.target as any).x)
+        .attr('y2', d => (d.target as any).y);
 
       node
-        .attr('transform', d => `translate(${d.x},${d.y})`);
+        .attr('transform', d => `translate(${(d as any).x},${(d as any).y})`);
     });
 
-    function dragstarted(event: d3.D3DragEvent<SVGGElement, NetworkNode, NetworkNode>) {
+    // Drag functions
+    function dragstarted(event: any) {
       if (!event.active) simulation.alphaTarget(0.3).restart();
       event.subject.fx = event.subject.x;
       event.subject.fy = event.subject.y;
     }
 
-    function dragged(event: d3.D3DragEvent<SVGGElement, NetworkNode, NetworkNode>) {
+    function dragged(event: any) {
       event.subject.fx = event.x;
       event.subject.fy = event.y;
     }
 
-    function dragended(event: d3.D3DragEvent<SVGGElement, NetworkNode, NetworkNode>) {
+    function dragended(event: any) {
       if (!event.active) simulation.alphaTarget(0);
       event.subject.fx = null;
       event.subject.fy = null;
     }
 
+    // Cleanup
     return () => {
       simulation.stop();
     };
-  }, [nodes, links, searchTerm, layout, groupByType]);
+  }, [companyId, companyName, directors, shareholders]);
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Network Visualization</h2>
-        <div className="flex items-center space-x-4">
-          <div className="relative">
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search nodes..."
-              className="pl-9 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
-          </div>
-          
-          <select
-            value={layout}
-            onChange={(e) => setLayout(e.target.value as LayoutType)}
-            className="px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="force">Force Layout</option>
-            <option value="radial">Radial Layout</option>
-            <option value="circular">Circular Layout</option>
-          </select>
-
-          <label className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              checked={groupByType}
-              onChange={(e) => setGroupByType(e.target.checked)}
-              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-            />
-            <span className="text-sm text-gray-600">Group by Type</span>
-          </label>
-
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => {
-                if (!svgRef.current) return;
-                d3.select(svgRef.current)
-                  .transition()
-                  .call(d3.zoom<SVGSVGElement, unknown>().scaleBy, 0.75);
-              }}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-              title="Zoom out"
-            >
-              <ZoomOut className="h-5 w-5" />
-            </button>
-            <span className="text-sm text-gray-500">{Math.round(zoom * 100)}%</span>
-            <button
-              onClick={() => {
-                if (!svgRef.current) return;
-                d3.select(svgRef.current)
-                  .transition()
-                  .call(d3.zoom<SVGSVGElement, unknown>().scaleBy, 1.5);
-              }}
-              className="p-2 hover:bg-gray-100 rounded-lg"
-              title="Zoom in"
-            >
-              <ZoomIn className="h-5 w-5" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="border rounded-lg overflow-hidden">
-        <svg ref={svgRef} className="w-full h-[600px]"></svg>
-      </div>
-
-      <div className="mt-4 flex gap-6 justify-center">
-        <div className="flex items-center">
-          <div className="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
-          <span className="text-sm text-gray-600">Company</span>
-        </div>
-        <div className="flex items-center">
-          <div className="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
-          <span className="text-sm text-gray-600">Directors</span>
-        </div>
-        <div className="flex items-center">
-          <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
-          <span className="text-sm text-gray-600">Shareholders</span>
-        </div>
-      </div>
+    <div className="w-full h-full">
+      <svg
+        ref={svgRef}
+        className="w-full h-full"
+        style={{ minHeight: '400px' }}
+      />
     </div>
   );
-};
+}

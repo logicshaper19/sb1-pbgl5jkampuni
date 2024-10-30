@@ -4,32 +4,27 @@ import { PrismaClient } from '@prisma/client';
 import companiesRouter from './api/routes/companies';
 
 const app = express();
-const prisma = new PrismaClient();
 
-app.use(cors());
+export const prisma = new PrismaClient();
+
+// More specific CORS configuration
+app.use(cors({
+  origin: ['http://localhost:3000'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
-
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok' });
-});
 
 app.use('/api/companies', companiesRouter);
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 5000;
 
-async function startServer() {
-  try {
-    await prisma.$connect();
-    console.log('Connected to database');
-    
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
-}
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
-startServer();
+process.on('beforeExit', async () => {
+  await prisma.$disconnect();
+});

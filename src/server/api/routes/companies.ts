@@ -1,71 +1,72 @@
 import { Router } from 'express';
-import { PrismaClient } from '@prisma/client';
+import type { RequestHandler } from 'express';
+import { prisma } from '../../index';
 
 const router = Router();
-const prisma = new PrismaClient();
 
-// Search companies
-router.get('/search', async (req, res) => {
-  const { q } = req.query;
-  
+router.get('/test', async (_req, res) => {
+  const count = await prisma.company.count();
+  const companies = await prisma.company.findMany({
+    take: 2,
+    include: {
+      directors: true
+    }
+  });
+  res.json({ count, companies });
+});
+
+const searchHandler: RequestHandler = async (req, res) => {
   try {
+    const q = req.query.q;
+    console.log('Received query:', q);
+    
+    if (!q || typeof q !== 'string') {
+      res.status(400).json({ 
+        error: 'Invalid search query',
+        details: `Query must be a string, received ${typeof q}`
+      });
+      return;
+    }
+
+    console.log('Executing Prisma query with:', q);
+
     const companies = await prisma.company.findMany({
       where: {
         OR: [
-          { name: { contains: q as string, mode: 'insensitive' } },
-          { registrationNumber: { contains: q as string, mode: 'insensitive' } },
+          { name: { contains: q, mode: 'insensitive' } },
+          { registrationNumber: { contains: q, mode: 'insensitive' } },
           {
             directors: {
               some: {
-                name: { contains: q as string, mode: 'insensitive' }
+                name: { contains: q, mode: 'insensitive' }
               }
             }
           }
         ]
       },
       include: {
-        address: true,
-        contactInfo: true,
         directors: true,
-        shareholders: true,
-        encumbrances: true,
-        tenders: true,
-        financialResults: true,
+        address: true,
+        contactInfo: true
       }
     });
 
-    res.json(companies);
-  } catch (error) {
-    console.error('Search error:', error);
-    res.status(500).json({ error: 'Search failed' });
-  }
-});
+    console.log('Query results:', companies);
 
-// Get company by ID
-router.get('/:id', async (req, res) => {
-  try {
-    const company = await prisma.company.findUnique({
-      where: { id: req.params.id },
-      include: {
-        address: true,
-        contactInfo: true,
-        directors: true,
-        shareholders: true,
-        encumbrances: true,
-        tenders: true,
-        financialResults: true,
-      }
+    res.status(200).json({
+      query: q,
+      count: companies.length,
+      results: companies
     });
-
-    if (!company) {
-      return res.status(404).json({ error: 'Company not found' });
-    }
-
-    res.json(company);
   } catch (error) {
-    console.error('Get company error:', error);
-    res.status(500).json({ error: 'Failed to fetch company' });
+    console.error('Search error details:', error);
+    res.status(500).json({ 
+      error: 'Failed to search companies',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
   }
-});
+};
+
+router.get('/search', searchHandler);
 
 export default router;

@@ -7,9 +7,13 @@ export enum UserRole {
 export interface User {
   id: string;
   email: string;
-  role: UserRole;
   name: string;
-  permissions: Permission[];
+  role: 'USER' | 'ADMIN' | 'SUPER_ADMIN';
+  isAdmin: boolean;
+}
+
+export interface AuthUser extends User {
+  isAdmin: boolean;
 }
 
 export interface LoginCredentials {
