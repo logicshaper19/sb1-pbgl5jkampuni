@@ -96,20 +96,40 @@ export function SearchBar({ onSearch, placeholder = 'Search for registered compa
       {suggestions.length > 0 && (
         <div className="absolute z-50 w-full mt-1 bg-white rounded-md shadow-lg">
           <ul className="max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
-            {suggestions.map((company) => (
+            {suggestions.length === 1 ? (
               <li
-                key={company.id}
-                onClick={() => handleSuggestionClick(company)}
+                key={suggestions[0].id}
+                onClick={() => {
+                  router.push(`/search/results?q=${encodeURIComponent(suggestions[0].name)}`);
+                  setQuery('');
+                  setSuggestions([]);
+                }}
                 className="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-50"
               >
                 <div className="flex flex-col">
-                  <span className="font-medium text-gray-900">{company.name}</span>
+                  <span className="font-medium text-gray-900">{suggestions[0].name}</span>
                   <span className="text-sm text-gray-500">
-                    Registration: {company.registrationNumber}
+                    Registration: {suggestions[0].registrationNumber}
                   </span>
                 </div>
               </li>
-            ))}
+            ) : (
+              <li
+                onClick={() => {
+                  router.push(`/search/results?q=${encodeURIComponent(query)}`);
+                  setQuery('');
+                  setSuggestions([]);
+                }}
+                className="cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-50"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-gray-900">
+                    {suggestions.length} results found
+                  </span>
+                  <span className="text-sm text-blue-600">See all</span>
+                </div>
+              </li>
+            )}
           </ul>
         </div>
       )}
