@@ -11,15 +11,15 @@
       "static/chunks/main-app.js",
       "static/chunks/app/page.js"
     ],
-    "/search/results/page": [
+    "/api/auth/me/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/search/results/page.js"
+      "static/chunks/app/api/auth/me/route.js"
     ],
-    "/companies/[id]/page": [
+    "/api/companies/search/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/companies/[id]/page.js"
+      "static/chunks/app/api/companies/search/route.js"
     ]
   }
 }

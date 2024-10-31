@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
@@ -10,18 +10,31 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, user, loading } = useAuth();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await login(email, password);
-      router.push('/');
-    } catch (error) {
-      console.error('Login failed:', error);
-      setError('Login failed');
+  useEffect(() => {
+    if (user?.isAdmin && !loading) {
+      router.push('/admin');
     }
+  }, [user, loading, router]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    login(email, password)
+      .then((redirectUrl) => {
+        router.push(redirectUrl);
+      })
+      .catch((error) => {
+        console.error('Login failed:', error);
+        setError('Invalid credentials');
+      });
   };
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">

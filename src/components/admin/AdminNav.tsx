@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/context/AuthContext';
 import { 
   LayoutDashboard, 
   Building2, 
@@ -10,82 +10,45 @@ import {
   Settings,
   LogOut 
 } from 'lucide-react';
-import type { User } from '@/types/auth';
 
-interface AuthState {
-  user: User | null;
-  loading: boolean;
-  signOut: () => void;
+interface AdminNavProps {
+  companyCount: number;
 }
 
-export function AdminNav() {
-  const { user, loading, signOut } = useAuth() as AuthState;
+export default function AdminNav({ companyCount }: AdminNavProps) {
+  const { user, logout } = useAuth();
   const pathname = usePathname() ?? '/';
 
-  const isActive = (path: string) => {
-    if (path === '/admin' && pathname === '/admin') {
-      return true;
-    }
-    return path !== '/admin' && pathname.startsWith(path);
+  const handleLogout = async () => {
+    await logout();
+    window.location.href = '/login';
   };
 
-  const navItems = [
-    {
-      href: '/admin',
-      label: 'Overview',
-      icon: LayoutDashboard
-    },
-    {
-      href: '/admin/companies',
-      label: 'Companies',
-      icon: Building2
-    },
-    {
-      href: '/admin/users',
-      label: 'Users',
-      icon: Users
-    },
-    {
-      href: '/admin/settings',
-      label: 'Settings',
-      icon: Settings
-    }
-  ];
-
   return (
-    <div className="flex flex-col h-screen bg-gray-900 w-64">
-      <div className="p-6">
-        <h1 className="text-2xl font-bold text-white">Admin Panel</h1>
+    <nav className="bg-white shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16 items-center">
+          <div className="flex items-center space-x-4">
+            <Link href="/admin" className="text-xl font-bold text-gray-900">
+              kampuni
+            </Link>
+            <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+              {companyCount} Companies
+            </span>
+          </div>
+          
+          <div className="flex items-center space-x-4">
+            <span className="text-gray-700">{user?.name || user?.email}</span>
+            <button
+              onClick={handleLogout}
+              className="text-gray-600 hover:text-gray-900 font-medium flex items-center space-x-2"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
       </div>
-
-      <nav className="flex-1 space-y-1">
-        {navItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={`
-              flex items-center px-6 py-3 text-sm font-medium transition-colors
-              ${isActive(item.href)
-                ? 'text-white bg-gray-800'
-                : 'text-gray-300 hover:text-white hover:bg-gray-800'
-              }
-            `}
-          >
-            <item.icon className="w-5 h-5 mr-3" />
-            {item.label}
-          </Link>
-        ))}
-      </nav>
-
-      <div className="p-6 border-t border-gray-800">
-        <button
-          onClick={() => signOut()}
-          className="flex items-center w-full px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-md transition-colors"
-        >
-          <LogOut className="w-5 h-5 mr-3" />
-          Logout
-        </button>
-      </div>
-    </div>
+    </nav>
   );
 }

@@ -5,6 +5,17 @@ export * from './company';
 export interface User {
   id: string;
   email: string;
-  name?: string;
-  role: 'USER' | 'ADMIN';
+  name: string | null;
+  isAdmin: boolean;
+}
+
+export interface Stats {
+  totalCompanies: number;
+  activeCompanies: number;
+  totalTenders: number;
+  totalEncumbrances: number;
+  recentActivity: {
+    date: string;
+    companies: number;
+  }[];
 }

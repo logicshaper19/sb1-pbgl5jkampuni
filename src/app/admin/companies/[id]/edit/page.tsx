@@ -5,11 +5,13 @@ import { useEffect, useState } from 'react';
 import { notFound } from 'next/navigation';
 import type { Company } from '@/types';
 
-export default function EditCompanyPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+type Props = {
+  params: {
+    id: string;
+  }
+}
+
+export default function EditCompanyPage({ params }: Props) {
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
