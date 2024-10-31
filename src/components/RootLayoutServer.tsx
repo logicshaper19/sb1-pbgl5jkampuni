@@ -1,8 +1,23 @@
 import type { Metadata } from 'next';
 
-export const metadata: Metadata = {
+// Define the correct type for constants
+interface AppConfig {
+  APP_NAME: string;
+  API_VERSION: string;
+  title: string;
+  description: string;
+}
+
+const config: AppConfig = {
+  APP_NAME: 'UseKampuni',
+  API_VERSION: 'v1',
   title: 'UseKampuni',
-  description: 'Business Registration Platform',
+  description: 'Company search platform'
+};
+
+export const metadata: Metadata = {
+  title: config.title,
+  description: config.description,
 };
 
 export function RootLayoutServer({

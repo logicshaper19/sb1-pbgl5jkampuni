@@ -25,6 +25,7 @@ model Company {
   financialResults   FinancialResult[]
   shareholders       Shareholder[]
   tenders            Tender[]
+  contacts           Contact[]
 }
 
 model Address {
@@ -99,4 +100,21 @@ model FinancialResult {
   employeeCount Int
   companyId     String
   company       Company @relation(fields: [companyId], references: [id])
+}
+
+model Contact {
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  // ... other contact fields
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          String    @default("user")
+  // ... other fields
 }

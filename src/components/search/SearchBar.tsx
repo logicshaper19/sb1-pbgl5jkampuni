@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search, X } from 'lucide-react';
-import type { Company } from '@/types';
+import type { Company } from '@/types/company';
 
 interface SearchBarProps {
   onSearch: (query: string) => void;

@@ -10,10 +10,17 @@ import {
   Settings,
   LogOut 
 } from 'lucide-react';
+import type { User } from '@/types/auth';
+
+interface AuthState {
+  user: User | null;
+  loading: boolean;
+  signOut: () => void;
+}
 
 export function AdminNav() {
-  const pathname = usePathname();
-  const { logout } = useAuth();
+  const { user, loading, signOut } = useAuth() as AuthState;
+  const pathname = usePathname() ?? '/';
 
   const isActive = (path: string) => {
     if (path === '/admin' && pathname === '/admin') {
@@ -72,7 +79,7 @@ export function AdminNav() {
 
       <div className="p-6 border-t border-gray-800">
         <button
-          onClick={logout}
+          onClick={() => signOut()}
           className="flex items-center w-full px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-800 rounded-md transition-colors"
         >
           <LogOut className="w-5 h-5 mr-3" />

@@ -1,27 +1,17 @@
 import { NextResponse } from 'next/server';
-import type { User } from '@/types';
+import type { User, UserRole } from '@/types/auth';
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { email, password } = body;
+    const user: User = {
+      id: '1',
+      email: body.email,
+      role: 'ADMIN' as UserRole,
+      isAdmin: true
+    };
 
-    if (email === 'test@example.com' && password === 'password') {
-      const user: User = {
-        id: '1',
-        email,
-        name: 'Test User',
-        role: 'USER',
-        isAdmin: false
-      };
-
-      return NextResponse.json(user);
-    }
-
-    return NextResponse.json(
-      { error: 'Invalid credentials' },
-      { status: 401 }
-    );
+    return NextResponse.json(user);
   } catch (error) {
     return NextResponse.json(
       { error: 'Invalid request' },

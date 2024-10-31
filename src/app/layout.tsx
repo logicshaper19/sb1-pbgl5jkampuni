@@ -1,28 +1,24 @@
 'use client';
 
-import '@/styles/globals.css';
-import { AuthProvider } from '@/context/AuthContext';
-import { ClientLayout } from '../components/ClientLayout';
-import type { Metadata } from 'next';
-
-// Define metadata directly in the layout file
-const metadata: Metadata = {
-  title: 'UseKampuni',
-  description: 'Business Registration Platform',
-};
+import '@/app/globals.css'
+import { TopNav } from '@/components/TopNav'
+import { AuthProvider } from '@/context/AuthContext'
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
     <html lang="en">
-      <body>
+      <body className="bg-white">
         <AuthProvider>
-          <ClientLayout>{children}</ClientLayout>
+          <TopNav />
+          <main className="container mx-auto px-4 py-8">
+            {children}
+          </main>
         </AuthProvider>
       </body>
     </html>
-  );
+  )
 }

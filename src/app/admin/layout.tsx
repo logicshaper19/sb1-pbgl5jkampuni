@@ -3,15 +3,21 @@
 import { useAuth } from '@/hooks/useAuth';
 import { AdminNav } from '@/components/admin/AdminNav';
 import { redirect } from 'next/navigation';
+import type { User } from '@/types/auth';
+
+interface AuthState {
+  user: User | null;
+  loading: boolean;
+}
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { user, isLoading } = useAuth();
+  const { user, loading } = useAuth() as AuthState;
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900"></div>

@@ -4,7 +4,7 @@ import { useSearchParams } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Building2, Calendar, MapPin, ArrowUpRight } from 'lucide-react';
-import type { Company } from '@/types';
+import type { Company, Director, Address } from '@/types/company';
 
 export default function SearchResultsPage() {
   const searchParams = useSearchParams();
@@ -97,19 +97,26 @@ export default function SearchResultsPage() {
                       </p>
                     </div>
 
-                    {company.address && (
+                    {typeof company.address === 'string' ? (
                       <div className="sm:col-span-2">
                         <p className="text-sm text-gray-500">Address</p>
-                        <p className="text-sm font-medium">{company.address.postalAddress}</p>
+                        <p className="text-sm font-medium">{company.address}</p>
+                      </div>
+                    ) : company.address?.postalCode && (
+                      <div className="sm:col-span-2">
+                        <p className="text-sm text-gray-500">Address</p>
+                        <p className="text-sm font-medium">
+                          {`${company.address.street || ''}, ${company.address.city || ''} ${company.address.postalCode}`}
+                        </p>
                       </div>
                     )}
                   </div>
 
-                  {company.directors && company.directors.length > 0 && (
+                  {company.directors && Array.isArray(company.directors) && company.directors.length > 0 && (
                     <div className="mt-4">
                       <p className="text-sm text-gray-500 mb-1">Directors</p>
                       <div className="flex flex-wrap gap-2">
-                        {company.directors.map((director) => (
+                        {company.directors.map((director: Director) => (
                           <span
                             key={director.id}
                             className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"

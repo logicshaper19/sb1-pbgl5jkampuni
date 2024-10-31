@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Building2, Users, Calendar, MapPin } from 'lucide-react';
-import type { Company } from '@/types';
+import type { Company, Director } from '../../types/company';
 
 interface CompanyDetailsProps {
   company: Company;
@@ -47,7 +47,10 @@ export function CompanyDetails({ company }: CompanyDetailsProps) {
             <div>
               <h3 className="text-sm font-medium text-gray-500">Registered Address</h3>
               <p className="mt-1 text-sm text-gray-900">
-                {company.address}
+                {typeof company.address === 'string' 
+                  ? company.address 
+                  : `${company.address.street || ''}, ${company.address.city || ''} ${company.address.postalCode || ''}`
+                }
               </p>
             </div>
           </div>
@@ -66,7 +69,10 @@ export function CompanyDetails({ company }: CompanyDetailsProps) {
               <div className="flex-1">
                 <h3 className="text-sm font-medium text-gray-900">{director.name}</h3>
                 <div className="mt-1 text-sm text-gray-500">
-                  <p>Appointed: {new Date(director.appointmentDate).toLocaleDateString()}</p>
+                  <p>Appointed: {director.appointments?.[0]?.date 
+                    ? new Date(director.appointments[0].date).toLocaleDateString() 
+                    : 'N/A'
+                  }</p>
                   {director.nationality && (
                     <p>Nationality: {director.nationality}</p>
                   )}

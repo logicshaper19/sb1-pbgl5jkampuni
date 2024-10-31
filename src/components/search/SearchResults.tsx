@@ -1,55 +1,20 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useRouter } from 'next/navigation';
-import { Company } from '@/types';
+import type { Company } from '@/types/company';
 import { Calendar, Building2, AlertCircle } from 'lucide-react';
 
-interface SearchResultsProps {
-  query: string;
+export interface SearchResultsProps {
+  results: Company[];
 }
 
-export function SearchResults({ query }: SearchResultsProps) {
+export function SearchResults({ results }: SearchResultsProps) {
   const router = useRouter();
-  const [results, setResults] = useState<Company[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchResults = async () => {
-      if (!query) {
-        setResults([]);
-        return;
-      }
-      
-      setLoading(true);
-      setError(null);
-      
-      try {
-        const response = await fetch(`/api/companies/search?q=${encodeURIComponent(query)}`);
-        if (!response.ok) throw new Error('Search failed');
-        
-        const data = await response.json();
-        setResults(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error('Search failed:', error);
-        setError('Failed to fetch results');
-        setResults([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+  if (!results) return null;
 
-    fetchResults();
-  }, [query]);
-
-  if (!query) return null;
-
-  if (error) {
-    return <div className="text-red-500">{error}</div>;
-  }
-
-  if (query && (!results || results.length === 0)) {
+  if (!Array.isArray(results) || results.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
         No companies found. Try a different search term.
@@ -59,10 +24,13 @@ export function SearchResults({ query }: SearchResultsProps) {
 
   return (
     <div className="space-y-4">
-      {Array.isArray(results) && results.map((company) => (
+      {results.map((company) => (
         <div
           key={company.id}
-          onClick={() => router.push(`/companies/${company.id}`)}
+          onClick={() => {
+            console.log('Navigating to:', `/companies/${company.id}`);
+            router.push(`/companies/${company.id}`);
+          }}
           className="block p-6 bg-white rounded-lg shadow hover:shadow-md transition-shadow cursor-pointer"
         >
           <div className="flex justify-between items-start">

@@ -1,35 +1,7 @@
 import axios from 'axios';
+import type { Company } from '@/types/company';
 
-export interface Company {
-  id: string;
-  name: string;
-  registrationNumber: string;
-  dateRegistered: string;
-  directors: Director[];
-  address: Address;
-  contactInfo: ContactInfo;
-}
-
-export interface Director {
-  id: string;
-  name: string;
-  role: string;
-  nationality: string;
-  address: string;
-}
-
-export interface Address {
-  street: string;
-  building: string;
-  postalCode: string;
-  city: string;
-}
-
-export interface ContactInfo {
-  email: string;
-  phone: string;
-  postalAddress: string;
-}
+export type { Company };
 
 export interface APIError {
   message: string;

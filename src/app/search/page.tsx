@@ -1,79 +1,90 @@
 'use client';
 
+import { useState, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useState, useEffect } from 'react';
 import { SearchResults } from '@/components/search/SearchResults';
-import type { Company } from '@/types';
+import { Search as SearchIcon } from 'lucide-react';
+import type { Company } from '@/types/company';
 
 export default function SearchPage() {
   const searchParams = useSearchParams();
-  const query = searchParams?.get('q') ?? '';
-  const [results, setResults] = useState<Company[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState(searchParams?.get('q') || '');
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchResults() {
-      if (!query) {
-        setResults([]);
-        return;
-      }
-
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch(`/api/companies/search?q=${encodeURIComponent(query)}`);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        setResults(data.results);
-      } catch (error) {
-        console.error('Search failed:', error);
-        setError('Failed to search companies');
-      } finally {
-        setIsLoading(false);
-      }
+  const performSearch = useCallback(async (query: string) => {
+    if (!query || query.length < 2) {
+      setCompanies([]);
+      return;
     }
 
-    fetchResults();
-  }, [query]);
+    setLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/companies/search?q=${encodeURIComponent(query)}`);
+      if (!response.ok) throw new Error('Search failed');
+      const data = await response.json();
+      setCompanies(data.results || []);
+    } catch (err) {
+      setError('An unexpected error occurred');
+      setCompanies([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Initial search from URL params
+  useEffect(() => {
+    const query = searchParams?.get('q');
+    if (query) {
+      setSearchTerm(query);
+      performSearch(query);
+    }
+  }, [searchParams, performSearch]);
+
+  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const query = event.target.value;
+    setSearchTerm(query);
+    performSearch(query);
+  };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-2xl font-bold mb-6">
-        Search Results for "{query}"
-      </h1>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-6">Search Companies</h1>
+      
+      <div className="relative mb-8">
+        <input
+          type="text"
+          className="w-full px-4 py-2 pl-10 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          placeholder="Search by company name, registration number, or director"
+          value={searchTerm}
+          onChange={handleSearch}
+          disabled={loading}
+        />
+        <SearchIcon className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+      </div>
 
-      {isLoading && (
-        <div className="flex items-center justify-center py-12">
+      {loading && (
+        <div className="flex justify-center my-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
         </div>
       )}
 
       {error && (
-        <div className="rounded-md bg-red-50 p-4 mb-6">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">{error}</h3>
-            </div>
-          </div>
+        <div className="bg-red-50 text-red-500 p-4 rounded-md mb-4">
+          {error}
         </div>
       )}
 
-      {!isLoading && !error && (
-        <div className="space-y-6">
-          <SearchResults results={results} />
+      {!loading && !error && <SearchResults results={companies} />}
+
+      {!loading && searchTerm.length >= 2 && companies.length === 0 && !error && (
+        <div className="text-center py-8 text-gray-500">
+          No companies found matching your search criteria
         </div>
       )}
     </div>
   );
-} 
+}

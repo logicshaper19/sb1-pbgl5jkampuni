@@ -3,10 +3,12 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Layout } from './components/Layout';
-import { Search } from './pages/Search';
-import { CompanyProfile } from './pages/CompanyProfile';
-import { LoginForm } from './components/auth/LoginForm';
-import { AdminDashboard } from './pages/admin/AdminDashboard';
+
+// Import from app directory
+import Search from './app/search/page';
+import CompanyProfile from './app/companies/[id]/page';
+import AdminDashboard from './app/admin/page';
+import LoginForm from './app/login/page';
 
 function App() {
   return (

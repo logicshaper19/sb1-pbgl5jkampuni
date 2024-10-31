@@ -1,14 +1,9 @@
-export enum UserRole {
-  USER = 'USER',
-  EDITOR = 'EDITOR',
-  ADMIN = 'ADMIN'
-}
+export type UserRole = 'USER' | 'ADMIN' | 'SUPER_ADMIN';
 
 export interface User {
   id: string;
   email: string;
-  name: string;
-  role: 'USER' | 'ADMIN' | 'SUPER_ADMIN';
+  role: UserRole;
   isAdmin: boolean;
 }
 
@@ -41,3 +36,9 @@ export const PERMISSIONS = {
   VIEW_ANALYTICS: 'view_analytics',
   EXPORT_DATA: 'export_data',
 } as const;
+
+export interface AuthState {
+  user: User | null;
+  loading: boolean;
+  isLoading: boolean;
+}
