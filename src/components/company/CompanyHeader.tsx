@@ -15,6 +15,21 @@ export function CompanyHeader({ company, user }: CompanyHeaderProps) {
   const [showShareModal, setShowShareModal] = useState(false);
   const [copying, setCopying] = useState(false);
 
+  const formatAddress = (address: any) => {
+    if (typeof address === 'string') return address;
+    
+    const parts = [
+      address.building,
+      address.street,
+      address.locality,
+      address.city,
+      address.postalCode,
+      address.postalAddress
+    ].filter(Boolean);
+    
+    return parts.join(', ');
+  };
+
   const handleShare = async () => {
     const url = window.location.href;
     try {
@@ -103,9 +118,7 @@ export function CompanyHeader({ company, user }: CompanyHeaderProps) {
           <div>
             <h3 className="text-sm font-medium text-gray-500">Address</h3>
             <p className="mt-1 text-sm text-gray-900">
-              {typeof company.address === 'string' 
-                ? company.address 
-                : JSON.stringify(company.address)}
+              {formatAddress(company.address)}
             </p>
           </div>
 

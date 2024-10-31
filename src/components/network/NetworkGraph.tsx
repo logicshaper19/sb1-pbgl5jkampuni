@@ -28,68 +28,124 @@ interface Link {
 export function NetworkGraph({ companyId, companyName, directors, shareholders }: NetworkGraphProps) {
   const svgRef = useRef<SVGSVGElement>(null);
 
+  const width = 1000;
+  const height = 400;
+
+  // Add padding to keep nodes away from edges
+  const padding = 100;
+
   useEffect(() => {
     if (!svgRef.current) return;
 
-    // Clear previous graph
     d3.select(svgRef.current).selectAll("*").remove();
 
-    // Prepare data
-    const nodes: Node[] = [
-      { id: companyId, name: companyName, type: 'company' },
-      ...directors.map(d => ({
-        id: `director-${d.id}`,
+    // Prepare data with deduplication
+    const uniqueNodes = new Map<string, Node>();
+    const links: Link[] = [];
+
+    // Add company node
+    uniqueNodes.set(companyId, {
+      id: companyId,
+      name: companyName,
+      type: 'company'
+    });
+
+    // Add directors and their links
+    directors.forEach(d => {
+      const id = d.id;
+      uniqueNodes.set(id, {
+        id,
         name: d.name,
-        type: 'director' as const
-      })),
-      ...shareholders.map(s => ({
-        id: `shareholder-${s.id}`,
+        type: 'director'
+      });
+      links.push({
+        source: id,
+        target: companyId,
+        type: 'director'
+      });
+    });
+
+    // Add shareholders and their links
+    shareholders.forEach(s => {
+      const id = s.id;
+      uniqueNodes.set(id, {
+        id,
         name: s.name,
-        type: 'shareholder' as const,
+        type: 'shareholder',
         value: s.percentage
-      }))
-    ];
-
-    const links: Link[] = [
-      ...directors.map(d => ({
-        source: `director-${d.id}`,
+      });
+      links.push({
+        source: id,
         target: companyId,
-        type: 'director' as const
-      })),
-      ...shareholders.map(s => ({
-        source: `shareholder-${s.id}`,
-        target: companyId,
-        type: 'shareholder' as const,
+        type: 'shareholder',
         value: s.percentage
-      }))
-    ];
+      });
+    });
 
-    // Set up dimensions
-    const width = svgRef.current.clientWidth;
-    const height = svgRef.current.clientHeight;
+    const nodes = Array.from(uniqueNodes.values());
 
-    // Create SVG
+    // Modify simulation forces to prevent overlap
+    const simulation = d3.forceSimulation(nodes)
+      .force('link', d3.forceLink(links)
+        .id((d: any) => d.id)
+        .distance(200))
+      .force('charge', d3.forceManyBody()
+        .strength(-2000))
+      .force('collide', d3.forceCollide()
+        .radius(d => d.type === 'company' ? 100 : 80)
+        .strength(1))
+      .force('center', d3.forceCenter(width / 2, height / 2))
+      .force('x', d3.forceX(width / 2).strength(0.1))
+      .force('y', d3.forceY(height / 2).strength(0.1))
+      .on('tick', () => {
+        // Constrain nodes within boundaries
+        nodes.forEach(node => {
+          node.x = Math.max(padding, Math.min(width - padding, node.x));
+          node.y = Math.max(padding, Math.min(height - padding, node.y));
+        });
+
+        // Update link positions
+        link
+          .attr('x1', d => d.source.x)
+          .attr('y1', d => d.source.y)
+          .attr('x2', d => d.target.x)
+          .attr('y2', d => d.target.y);
+
+        // Update node positions
+        node
+          .attr('transform', d => `translate(${d.x},${d.y})`);
+      });
+
+    // Add additional separation force for nodes with same person
+    simulation.force('collision-resolution', d3.forceRadial(function(d) {
+      // Push nodes with same name further apart
+      return d.name === companyName ? 0 : 200;
+    }, width / 2, height / 2).strength(0.5));
+
     const svg = d3.select(svgRef.current)
       .attr('width', width)
       .attr('height', height);
 
-    // Create simulation
-    const simulation = d3.forceSimulation(nodes as d3.SimulationNodeDatum[])
-      .force('link', d3.forceLink(links).id((d: any) => d.id))
-      .force('charge', d3.forceManyBody().strength(-1000))
-      .force('center', d3.forceCenter(width / 2, height / 2));
+    // Add a background rect to make the full area clickable
+    svg.append('rect')
+      .attr('width', width)
+      .attr('height', height)
+      .attr('fill', 'white');
 
-    // Create links
-    const link = svg.append('g')
+    // Create container for graph
+    const graphContainer = svg.append('g');
+
+    // Add links
+    const link = graphContainer.append('g')
       .selectAll('line')
       .data(links)
       .join('line')
       .attr('stroke', d => d.type === 'director' ? '#9333ea' : '#2563eb')
-      .attr('stroke-width', d => d.value ? Math.sqrt(d.value) : 1)
+      .attr('stroke-width', 2)
       .attr('stroke-opacity', 0.6);
 
-    // Create nodes
-    const node = svg.append('g')
+    // Add nodes
+    const node = graphContainer.append('g')
       .selectAll('g')
       .data(nodes)
       .join('g')
@@ -98,9 +154,9 @@ export function NetworkGraph({ companyId, companyName, directors, shareholders }
         .on('drag', dragged)
         .on('end', dragended));
 
-    // Add circles to nodes
+    // Add circles for nodes
     node.append('circle')
-      .attr('r', d => d.type === 'company' ? 20 : 10)
+      .attr('r', d => d.type === 'company' ? 30 : 20)
       .attr('fill', d => {
         switch (d.type) {
           case 'company': return '#ef4444';
@@ -108,38 +164,50 @@ export function NetworkGraph({ companyId, companyName, directors, shareholders }
           case 'shareholder': return '#2563eb';
           default: return '#gray';
         }
-      });
+      })
+      .attr('stroke', '#ffffff')
+      .attr('stroke-width', 2);
 
-    // Add labels to nodes
+    // Add labels
     node.append('text')
-      .attr('dx', 15)
+      .attr('dx', d => d.type === 'company' ? 40 : 25)
       .attr('dy', 5)
       .text(d => d.name)
       .attr('fill', '#1f2937')
-      .attr('font-size', '12px');
+      .attr('font-size', '14px')
+      .attr('font-weight', d => d.type === 'company' ? 'bold' : 'normal');
 
-    // Add titles for hover
-    node.append('title')
-      .text(d => {
-        if (d.type === 'shareholder' && d.value) {
-          return `${d.name} (${d.value}%)`;
-        }
-        return d.name;
-      });
+    // Add legend in a fixed position
+    const legend = svg.append('g')
+      .attr('class', 'legend')
+      .attr('transform', `translate(${padding / 2}, ${padding / 2})`);
 
-    // Update positions on simulation tick
-    simulation.on('tick', () => {
-      link
-        .attr('x1', d => (d.source as any).x)
-        .attr('y1', d => (d.source as any).y)
-        .attr('x2', d => (d.target as any).x)
-        .attr('y2', d => (d.target as any).y);
+    const legendData = [
+      { type: 'company', color: '#ef4444', label: 'Company' },
+      { type: 'director', color: '#9333ea', label: 'Director' },
+      { type: 'shareholder', color: '#2563eb', label: 'Shareholder' }
+    ];
 
-      node
-        .attr('transform', d => `translate(${(d as any).x},${(d as any).y})`);
-    });
+    const legendItems = legend.selectAll('.legend-item')
+      .data(legendData)
+      .enter()
+      .append('g')
+      .attr('class', 'legend-item')
+      .attr('transform', (d, i) => `translate(0, ${i * 25})`);
 
-    // Drag functions
+    // Add colored circles to legend
+    legendItems.append('circle')
+      .attr('r', 6)
+      .attr('fill', d => d.color);
+
+    // Add text labels to legend
+    legendItems.append('text')
+      .attr('x', 15)
+      .attr('y', 5)
+      .text(d => d.label)
+      .attr('font-size', '14px')
+      .attr('fill', '#4b5563');
+
     function dragstarted(event: any) {
       if (!event.active) simulation.alphaTarget(0.3).restart();
       event.subject.fx = event.subject.x;
@@ -147,8 +215,8 @@ export function NetworkGraph({ companyId, companyName, directors, shareholders }
     }
 
     function dragged(event: any) {
-      event.subject.fx = event.x;
-      event.subject.fy = event.y;
+      event.subject.fx = Math.max(padding, Math.min(width - padding, event.x));
+      event.subject.fy = Math.max(padding, Math.min(height - padding, event.y));
     }
 
     function dragended(event: any) {
@@ -156,20 +224,11 @@ export function NetworkGraph({ companyId, companyName, directors, shareholders }
       event.subject.fx = null;
       event.subject.fy = null;
     }
-
-    // Cleanup
-    return () => {
-      simulation.stop();
-    };
   }, [companyId, companyName, directors, shareholders]);
 
   return (
-    <div className="w-full h-full">
-      <svg
-        ref={svgRef}
-        className="w-full h-full"
-        style={{ minHeight: '400px' }}
-      />
+    <div className="w-full h-[400px] bg-white rounded-lg shadow p-4 mb-8">
+      <svg ref={svgRef} className="w-full h-full" />
     </div>
   );
 }
