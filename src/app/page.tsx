@@ -33,11 +33,11 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-start pt-24 px-4">
-      <h1 className="text-4xl font-bold mb-8">Kampuni</h1>
+      <h1 className="text-4xl font-bold mb-8">Empower Your Decisions with Trusted Data</h1>
       <div className="w-full max-w-3xl">
         <div className="text-center mb-8">
           <p className="text-gray-600">
-            Search for registered companies in Kenya
+          Access accurate, real-time information about any business in Kenya
           </p>
         </div>
         
