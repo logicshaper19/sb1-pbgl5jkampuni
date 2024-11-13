@@ -24,7 +24,8 @@ const tabs = [
   { name: 'Observations', href: '#observations' },
 ];
 
-export default function CompanyPage({ params }: { params: { id: string } }) {
+export default function CompanyPage() {
+  const { id } = useParams();
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +33,7 @@ export default function CompanyPage({ params }: { params: { id: string } }) {
   useEffect(() => {
     async function fetchCompany() {
       try {
-        const response = await fetch(`/api/companies/${params.id}`, {
+        const response = await fetch(`/api/companies/${id}`, {
           headers: {
             'Content-Type': 'application/json',
             // Add any auth headers if needed
@@ -57,7 +58,7 @@ export default function CompanyPage({ params }: { params: { id: string } }) {
     }
 
     fetchCompany();
-  }, [params.id]);
+  }, [id]);
 
   if (loading) {
     return (
